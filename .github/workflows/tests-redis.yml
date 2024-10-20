@@ -1,0 +1,43 @@
+name: Tests
+
+on:
+  pull_request:
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7.4
+        ports:
+          - 6379:6379
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: laravel
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+        ports:
+          - 3306:3306
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4.2.1
+
+      - name: Setup PHP and Composer
+        uses: shivammathur/setup-php@2.31.1
+        with:
+          php-version: '8.3'
+          extensions: redis
+          tools: composer:v2
+
+      - name: Install Dependencies
+        run: composer install -q --no-interaction
+
+      - name: Prep Application
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run Tests
+        run: php artisan test --compact
